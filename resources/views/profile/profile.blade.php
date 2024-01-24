@@ -166,7 +166,7 @@
                     </div>
                 </div>
                 <div class="hr-text">INFORMATION COMPARISON</div>
-                <form action="{{ route('profile.update') }}" method="POST">
+                <form action="{{ route('settings.profile.update') }}" method="POST">
                     @csrf
                     @method('patch')
                     <div class="modal-body">

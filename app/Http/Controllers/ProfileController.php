@@ -37,7 +37,7 @@ class ProfileController extends Controller
 
         Session::flash('toast-message', 'Profile updated successfully!');
 
-        return Redirect::route('profile.edit')->with('status', 'profile-updated');
+        return Redirect::route('settings.profile.edit')->with('status', 'profile-updated');
     }
 
     /**

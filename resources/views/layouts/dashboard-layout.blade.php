@@ -15,10 +15,10 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
     <title>@yield('pageTitle')</title>
     <!-- CSS files -->
-    <link href="./dist/css/tabler.min.css?1684106062" rel="stylesheet" />
-    <link href="./dist/css/tabler-flags.min.css?1684106062" rel="stylesheet" />
-    <link href="./dist/css/tabler-payments.min.css?1684106062" rel="stylesheet" />
-    <link href="./dist/css/tabler-vendors.min.css?1684106062" rel="stylesheet" />
+    <link href="{{ asset('./dist/css/tabler.min.css?1684106062') }}" rel="stylesheet" />
+    <link href="{{ asset('./dist/css/tabler-flags.min.css?1684106062') }}" rel="stylesheet" />
+    <link href="{{ asset('./dist/css/tabler-payments.min.css?1684106062') }}" rel="stylesheet" />
+    <link href="{{ asset('./dist/css/tabler-vendors.min.css?1684106062') }}" rel="stylesheet" />
     @stack('stylesheets')
     <link href="./dist/css/demo.min.css?1684106062" rel="stylesheet" />
     <style>
@@ -35,7 +35,7 @@
 </head>
 
 <body class=" layout-fluid">
-    <script src="./dist/js/demo-theme.min.js?1684106062"></script>
+    <script src="{{ asset('./dist/js/demo-theme.min.js?1684106062') }}"></script>
     <div class="page">
         @include('layouts.nav-layout')
         <div class="page-wrapper">
@@ -58,7 +58,7 @@
                                 <a href="#" class="btn dropdown-toggle"
                                     data-bs-toggle="dropdown">{{ Auth::user()->name }}</a>
                                 <div class="dropdown-menu">
-                                    <a class="dropdown-item" href="{{ route('profile.edit') }}">
+                                    <a class="dropdown-item" href="{{ route('settings.profile.edit') }}">
                                         <!-- SVG icon from http://tabler-icons.io/i/settings -->
                                         <svg xmlns="http://www.w3.org/2000/svg"
                                             class="icon icon-tabler icon-tabler-user-square" width="24"
@@ -146,14 +146,14 @@
         </div>
     </div>
     <!-- Libs JS -->
-    <script src="./dist/libs/apexcharts/dist/apexcharts.min.js?1684106062" defer></script>
-    <script src="./dist/libs/jsvectormap/dist/js/jsvectormap.min.js?1684106062" defer></script>
-    <script src="./dist/libs/jsvectormap/dist/maps/world.js?1684106062" defer></script>
-    <script src="./dist/libs/jsvectormap/dist/maps/world-merc.js?1684106062" defer></script>
+    <script src="{{ asset('./dist/libs/apexcharts/dist/apexcharts.min.js?1684106062') }}" defer></script>
+    <script src="{{ asset('./dist/libs/jsvectormap/dist/js/jsvectormap.min.js?1684106062') }}" defer></script>
+    <script src="{{ asset('./dist/libs/jsvectormap/dist/maps/world.js?1684106062') }}" defer></script>
+    <script src="{{ asset('./dist/libs/jsvectormap/dist/maps/world-merc.js?1684106062') }}" defer></script>
     <!-- Tabler Core -->
-    <script src="./dist/js/tabler.min.js?1684106062" defer></script>
+    <script src="{{ asset('./dist/js/tabler.min.js?1684106062') }}" defer></script>
     @stack('scripts')
-    <script src="./dist/js/demo.min.js?1684106062" defer></script>
+    <script src="{{ asset('./dist/js/demo.min.js?1684106062') }}" defer></script>
     <script>
         // @formatter:off
         document.addEventListener("DOMContentLoaded", function() {
