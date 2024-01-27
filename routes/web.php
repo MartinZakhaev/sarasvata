@@ -38,6 +38,7 @@ Route::middleware('auth')->group(function () {
     Route::prefix('product')->group(function () {
         Route::name('product.')->group(function () {
             Route::get('/item', [ItemController::class, 'index'])->name('item.index');
+            Route::post('/item', [ItemController::class, 'store'])->name('item.store');
             Route::get('/item/{id}', [ItemController::class, 'edit'])->name('item.edit');
             Route::patch('/item/{id}', [ItemController::class, 'update'])->name('item.update');
             Route::delete('/item/{id}', [ItemController::class, 'destroy'])->name('item.destroy');
@@ -49,6 +50,8 @@ Route::middleware('auth')->group(function () {
     Route::prefix('product')->group(function () {
         Route::name('product.')->group(function () {
             Route::get('/category', [CategoryController::class, 'index'])->name('category.index');
+            Route::get('/get-category', [CategoryController::class, 'getAllCategory'])->name('category.get-all-category');
+            Route::post('/category', [CategoryController::class, 'store'])->name('category.store');
             Route::get('/category/{id}', [CategoryController::class, 'edit'])->name('category.edit');
             Route::patch('/category/{id}', [CategoryController::class, 'update'])->name('category.update');
             Route::delete('/category/{id}', [CategoryController::class, 'destroy'])->name('category.destroy');
