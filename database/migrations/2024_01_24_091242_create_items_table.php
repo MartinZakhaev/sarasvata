@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('item_name');
             $table->string('stock');
+            $table->string('file_path');
             $table->timestamps();
         });
     }

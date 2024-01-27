@@ -11,7 +11,8 @@ class Item extends Model
 
     protected $fillable = [
         'item_name',
-        'stock'
+        'stock',
+        'file_path',
     ];
 
     public function categories()
