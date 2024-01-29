@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Item;
+use App\Models\ItemFile;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\File;
 use Yajra\DataTables\Facades\DataTables;
 
 class ItemController extends Controller
@@ -14,8 +16,7 @@ class ItemController extends Controller
     public function index(Request $request)
     {
         if ($request->ajax()) {
-            // $data = Item::select('*');
-            $data = Item::with('categories') // Eager load categories relationship
+            $data = Item::with(['categories', 'itemFiles'])
                 ->select(['items.id', 'items.item_name', 'items.stock', 'categories.category_name'])
                 ->leftJoin('category_item', 'items.id', '=', 'category_item.item_id')
                 ->leftJoin('categories', 'category_item.category_id', '=', 'categories.id')
@@ -24,13 +25,35 @@ class ItemController extends Controller
             return DataTables::of($data)
                 ->addIndexColumn()
                 ->addColumn('action', function ($row) {
-                    $actionBtn = '<a href="javascript:void(0)" class="edit btn btn-success btn-sm" data-id="'
-                        . $row->id . '">Edit</a> 
+                    $actionBtn = '
+                    <button class="btn btn-outline-info btn-sm">
+                    <span class="details-control cursor-pointer"
+                    data-id="' . $row->id . '">
+                    Details
+                    </svg>
+                    </span>
+                    </button>
                     <a href="javascript:void(0)" 
-                    class="delete btn btn-danger btn-sm" 
-                    data-bs-toggle="modal" data-bs-target="#modal-danger" data-id="'
-                        . $row->id . '">Delete</a>';
+                    class="edit btn btn-outline-success btn-sm" 
+                    data-id="' . $row->id . '">
+                    Edit
+                    </a> 
+                    <a href="javascript:void(0)" 
+                    class="delete btn btn-outline-danger btn-sm" 
+                    data-bs-toggle="modal" 
+                    data-bs-target="#modal-danger" 
+                    data-id="' . $row->id . '">
+                    Delete
+                    </a>
+                    ';
                     return $actionBtn;
+                })
+                ->addColumn('file_paths', function ($row) {
+                    $filePaths = '';
+                    foreach ($row->itemFiles as $file) {
+                        $filePaths .= '<a href="' . asset($file->file_path) . '">' . $file->file_path . '</a><br>';
+                    }
+                    return $filePaths;
                 })
                 ->rawColumns(['action'])
                 ->make(true);
@@ -55,6 +78,7 @@ class ItemController extends Controller
             'name' => 'required|string|max:255',
             'category' => 'required|exists:categories,id',
             'stock' => 'required|numeric',
+            'files.*' => 'required|image|max:10000',
         ]);
 
         if ($validator->fails()) {
@@ -68,7 +92,28 @@ class ItemController extends Controller
 
         $item->categories()->attach($request->input('category'));
 
-        return response()->json(['message' => 'Category created successfully', 'category' => $item]);
+        $uploadedFiles = [];
+        foreach ($request->file('files') as $file) {
+            $timestamp = now()->timestamp;
+            $filename = $timestamp . '_' . $file->getClientOriginalName();
+            $file->move(public_path('image/items'), $filename);
+            $filePath = 'image/items/' . $filename;
+
+            $uploadedFile = new ItemFile([
+                'file_path' => $filePath,
+            ]);
+
+            $item->itemFiles()->save($uploadedFile);
+
+            $uploadedFiles[] = $uploadedFile;
+        }
+
+        $notification = array(
+            'message' => 'Item created successfully',
+            'type' => 'success',
+        );
+
+        return response()->json(['notification' => $notification, 'item' => $item]);
     }
 
     /**
@@ -84,18 +129,15 @@ class ItemController extends Controller
      */
     public function edit(string $id)
     {
-        // $item = Item::find($id);
-        // return response()->json($item);
-
         $item = Item::with(['categories' => function ($query) {
             $query->select('categories.id', 'categories.category_name');
         }])
             ->select(['items.id', 'items.item_name', 'items.stock'])
             ->leftJoin('category_item', 'items.id', '=', 'category_item.item_id')
             ->leftJoin('categories', 'category_item.category_id', '=', 'categories.id')
-            ->where('items.id', $id) // Filter by the specific item ID
+            ->where('items.id', $id)
             ->groupBy('items.id', 'items.item_name', 'items.stock', 'categories.category_name')
-            ->first(); // Use 'first' to retrieve a single record
+            ->first();
         return response()->json([
             'id' => $item->id,
             'item_name' => $item->item_name,
@@ -114,36 +156,36 @@ class ItemController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        // Retrieve the item
         $item = Item::find($id);
 
-        // Check if the item exists
         if (!$item) {
             return redirect()->route('product.item.index')->with('error', 'Item not found');
         }
 
-        // Validate the request data
         $validatedData = $request->validate([
             'name' => 'required|string|max:255',
-            'category_id' => 'required|exists:categories,id', // Ensure category exists
+            'category_id' => 'required|exists:categories,id',
             'stock' => 'required|numeric|min:0',
         ]);
 
-        // Update item details
         $item->item_name = $validatedData['name'];
         $item->stock = $validatedData['stock'];
         $item->save();
 
-        // Sync item's categories
         $item->categories()->sync([$validatedData['category_id']]);
 
-        return redirect()->route('product.item.index')->with('success', 'Item updated successfully');
+        $notification = array(
+            'message' => 'Item updated successfully',
+            'type' => 'success',
+        );
+
+        return response()->json(['notification' => $notification, 'item' => $item]);
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(Request $request, string $id)
     {
         $item = Item::find($id);
 
@@ -151,10 +193,19 @@ class ItemController extends Controller
             return response()->json(['message' => 'Item not found.'], 404);
         }
 
+        foreach ($item->itemFiles as $file) {
+            File::delete($file->file_path);
+        }
+
         $item->categories()->detach();
 
         $item->delete();
 
-        return response()->json(['message' => 'Item deleted successfully.']);
+        $notification = array(
+            'message' => 'Item deleted successfully',
+            'type' => 'success',
+        );
+
+        return response()->json(['notification' => $notification]);
     }
 }
