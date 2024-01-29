@@ -1,4 +1,7 @@
 @extends('layouts.dashboard-layout')
+@push('stylesheets')
+    <link href="{{ asset('./dist/libs/dropzone/dist/dropzone.css') }}" rel="stylesheet" />
+@endpush
 @section('pageTitle', isset($pageTitle) ? $pageTitle : 'Products/Item')
 @section('pageTitleInfo', isset($pageTitleInfo) ? $pageTitleInfo : 'Item Information')
 @section('content')
@@ -32,7 +35,7 @@
                                                     <th>Item Name</th>
                                                     <th>Category</th>
                                                     <th>Stock</th>
-                                                    <th width="105px">Action</th>
+                                                    <th width="160px">Action</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -56,11 +59,11 @@
                     <h5 class="modal-title">Add Item</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form id="addItemForm" method="POST">
-                    @csrf
-                    @method('POST')
-                    <input type="hidden" id="categoryId" name="category_id">
-                    <div class="modal-body">
+                <div class="modal-body">
+                    <form id="addItemForm" method="POST">
+                        @csrf
+                        @method('POST')
+                        <input type="hidden" id="categoryId" name="category_id">
                         <label class="form-label">Item Name</label>
                         <div class="input-icon mb-3">
                             <span class="input-icon-addon">
@@ -76,7 +79,7 @@
                                 </svg>
                             </span>
                             <input type="text" class="form-control" id="itemName" placeholder="Your Item Name" />
-                            <div id="itemNameInvalid" class="invalid-feedback">asdf</div>
+                            <div id="itemNameInvalid" class="invalid-feedback"></div>
                         </div>
                         <label class="form-label">Category</label>
                         <div class="input-icon mb-3">
@@ -107,20 +110,30 @@
                                     <path d="M4 16l8 4l8 -4" />
                                 </svg>
                             </span>
-                            <input type="number" class="form-control {{ $errors->has('name') ? ' is-invalid' : '' }}"
-                                id="itemStock" placeholder="Stock" />
+                            <input type="number" class="form-control" id="itemStock" placeholder="Stock" />
                             <div id="stockInvalid" class="invalid-feedback"></div>
                         </div>
-                    </div>
-                    <div class="modal-footer">
-                        <a href="#" class="btn btn-link link-secondary" data-bs-dismiss="modal">
-                            Cancel
-                        </a>
-                        <button type="submit" class="btn btn-primary ms-auto" data-bs-dismiss="modal">
-                            Save
-                        </button>
-                    </div>
-                </form>
+                        <input type="hidden" id="c" name="uploadedFileName">
+                        <button type="submit" class="d-none"></button>
+                    </form>
+                    <form class="dropzone" id="dropzone-custom" action="#" autocomplete="off" novalidate>
+                        <div class="fallback">
+                            <input name="file" type="file" />
+                        </div>
+                        <div class="dz-message">
+                            <h3 class="dropzone-msg-title">Media</h3>
+                            <span class="dropzone-msg-desc">Upload Your Item Photo Here</span>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <a href="#" class="btn btn-link link-secondary" data-bs-dismiss="modal">
+                        Cancel
+                    </a>
+                    <button type="button" id="submitAddBtn" class="btn btn-primary ms-auto" data-bs-dismiss="modafl">
+                        Save
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -243,32 +256,24 @@
     </div>
 @endsection
 @push('scripts')
+    <script src="{{ asset('./dist/libs/dropzone/dist/dropzone-min.js') }}" defer></script>
     <script type="text/javascript">
         $(function() {
 
-            // Fetch categories and populate the select input
             function fetchCategoriesAndPopulateSelect(selector, currentCategoryId = null) {
                 $.ajax({
-                    url: '{{ route('product.category.get-all-category') }}', // Adjust the route to fetch categories
+                    url: '{{ route('product.category.get-all-category') }}',
                     type: 'GET',
                     success: function(response) {
-                        var categories = response.data; // Assuming your response has a 'data' property
+                        var categories = response.data;
 
-                        // Clear existing options
                         $(selector).empty();
-
-                        // Add a default option
                         $(selector).append('<option value="">Select Category</option>');
 
-                        // Add options for each category
                         $.each(categories, function(index, category) {
-                            // $(selector).append('<option value="' + category.id +
-                            //     '">' +
-                            //     category.category_name + '</option>');
                             var option = $('<option></option>').attr('value', category.id).text(
                                 category.category_name);
 
-                            // Check if it's the current category and mark it as selected
                             if (category.id == currentCategoryId) {
                                 option.attr('selected', 'selected');
                             }
@@ -313,6 +318,53 @@
                 ]
             });
 
+            // Event listener untuk menampilkan row details
+            $('.data-table tbody').on('click', '.details-control', function() {
+                var tr = $(this).closest('tr');
+                var row = table.row(tr);
+
+                if (row.child.isShown()) {
+                    row.child.hide();
+                    tr.removeClass('shown');
+                } else {
+                    row.child(format(row.data())).show();
+                    tr.addClass('shown');
+                }
+            });
+
+            // Function untuk format row details
+            function format(d) {
+                var carouselIndicators = '';
+                var carouselItems = '';
+
+                // Loop through the item files to generate carousel indicators and items
+                d.item_files.forEach(function(itemFile, index) {
+                    var imageUrl = '{{ asset('') }}' + itemFile.file_path;
+                    carouselIndicators +=
+                        '<button type="button" data-bs-target="#carousel-indicators-thumb" data-bs-slide-to="' +
+                        index + '" class="ratio ratio-4x3' + (index === 0 ? ' active' : '') +
+                        '" style="background-image: url(' + imageUrl + ')"></button>';
+                    carouselItems += '<div class="carousel-item' + (index === 0 ? ' active' : '') + '">' +
+                        '<img class="d-block w-100" alt="" src="' + imageUrl +
+                        '" style="max-width: 100%; max-height: 300px;" />' +
+                        '</div>';
+                });
+
+                return '<div class="row-details">' +
+                    '<p><strong>Item ID:</strong> ' + d.id + '</p>' +
+                    '<p><strong>Category:</strong> ' + d.category_name + '</p>' +
+                    '<p><strong>Stock:</strong> ' + d.stock + '</p>' +
+                    '<div id="carousel-indicators-thumb" class="carousel slide carousel-fade" data-bs-ride="carousel">' +
+                    '<div class="carousel-indicators carousel-indicators-thumb">' +
+                    carouselIndicators +
+                    '</div>' +
+                    '<div class="carousel-inner">' +
+                    carouselItems +
+                    '</div>' +
+                    '</div>' +
+                    '</div>';
+            }
+
             // saat click tombol add
             $('#addItemBtn').click(function() {
                 $('#itemName').val('');
@@ -341,6 +393,37 @@
                 });
             });
 
+            var selectedFiles = [];
+
+            var myDropzone = new Dropzone("#dropzone-custom", {
+                uploadMultiple: true,
+                autoProcessQueue: false, // Disable auto processing
+                paramName: "file", // Name of the file parameter
+                maxFilesize: 10, // Maximum file size in MB
+                acceptedFiles: ".jpg, .jpeg, .png, .gif, .webp", // Allowed file types
+                addRemoveLinks: true, // Add remove button
+                dictRemoveFile: "Remove", // Text for remove button
+                maxFiles: 10,
+                parallelUploads: 10,
+            });
+
+            // Custom event handler saat file di tambahkan 
+            myDropzone.on("addedfile", function(file) {
+                selectedFiles.push(file);
+            });
+
+            // Function to remove files from the array when removed from Dropzone
+            myDropzone.on("removedfile", function(file) {
+                var index = selectedFiles.indexOf(file);
+                if (index !== -1) {
+                    selectedFiles.splice(index, 1);
+                }
+            });
+
+            $("#submitAddBtn").on("click", function() {
+                $("#addItemForm").find("[type='submit']").trigger("click");
+            });
+
             // saat click tombol save
             // pada form add item
             $('#addItemForm').on('submit', function(event) {
@@ -350,35 +433,54 @@
                 var itemCategory = $('#categorySelector').val();
                 var itemStock = $('#itemStock').val();
 
-                $.ajax({
-                    url: '{{ route('product.item.store') }}',
-                    method: 'POST',
-                    data: {
-                        _method: 'POST',
-                        _token: $('meta[name="csrf-token"]').attr('content'),
-                        name: itemName,
-                        category: itemCategory,
-                        stock: itemStock,
-                    },
-                    success: function(response) {
-                        $('.data-table').DataTable().ajax.reload(null, false);
-                    },
-                    error: function(xhr) {
-                        // Check if the response has JSON data (validation errors)
-                        if (xhr.responseJSON && xhr.responseJSON.errors) {
-                            // Display validation errors below the input field
-                            var errors = xhr.responseJSON.errors;
-                            $('#itemName').addClass('is-invalid');
-                            $('#categorySelector').addClass('is-invalid');
-                            $('#itemStock').addClass('is-invalid');
-                            $('#itemNameInvalid').html(errors.name);
-                            $('#categoryInvalid').html(errors.category);
-                            $('#stockInvalid').html(errors.stock);
-                        } else {
-                            // Handle other types of errors
-                            console.log(xhr);
+                if (selectedFiles.length === 0) {
+                    toastr.warning('Please upload a file.');
+                    return;
+                }
+
+                myDropzone.processQueue();
+
+                // Menunggu proses upload file selesai
+                myDropzone.on('queuecomplete', function() {
+                    var formData = new FormData();
+                    formData.append('_method', 'POST');
+                    formData.append('_token', $('meta[name="csrf-token"]').attr('content'));
+                    formData.append('name', itemName);
+                    formData.append('category', itemCategory);
+                    formData.append('stock', itemStock);
+                    selectedFiles.forEach(function(file, index) {
+                        formData.append('files[' + index + ']', file);
+                    });
+
+                    $.ajax({
+                        url: '{{ route('product.item.store') }}',
+                        method: 'POST',
+                        data: formData,
+                        processData: false,
+                        contentType: false,
+                        success: function(response) {
+                            myDropzone.removeAllFiles(true);
+                            $('.data-table').DataTable().ajax.reload(null, false);
+                            selectedFiles = [];
+                            var notification = response.notification;
+                            if (notification) {
+                                toastr[notification.type](notification.message);
+                            }
+                        },
+                        error: function(xhr) {
+                            if (xhr.responseJSON && xhr.responseJSON.errors) {
+                                var errors = xhr.responseJSON.errors;
+                                $('#itemName').addClass('is-invalid');
+                                $('#categorySelector').addClass('is-invalid');
+                                $('#itemStock').addClass('is-invalid');
+                                $('#itemNameInvalid').html(errors.name);
+                                $('#categoryInvalid').html(errors.category);
+                                $('#stockInvalid').html(errors.stock);
+                            } else {
+                                console.log(xhr);
+                            }
                         }
-                    }
+                    });
                 });
             });
 
@@ -405,6 +507,10 @@
                     },
                     success: function(response) {
                         $('.data-table').DataTable().ajax.reload(null, false);
+                        var notification = response.notification;
+                        if (notification) {
+                            toastr[notification.type](notification.message);
+                        }
                     }
                 });
             });
@@ -429,6 +535,10 @@
                     },
                     success: function(response) {
                         $('.data-table').DataTable().ajax.reload(null, false);
+                        var notification = response.notification;
+                        if (notification) {
+                            toastr[notification.type](notification.message);
+                        }
                     }
                 });
             });

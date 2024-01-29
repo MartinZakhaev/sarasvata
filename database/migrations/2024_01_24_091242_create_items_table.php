@@ -17,6 +17,13 @@ return new class extends Migration
             $table->string('stock');
             $table->timestamps();
         });
+
+        Schema::create('item_files', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('item_id')->constrained()->onDelete('cascade');
+            $table->string('file_path');
+            $table->timestamps();
+        });
     }
 
     /**
@@ -24,6 +31,7 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::dropIfExists('item_files');
         Schema::dropIfExists('items');
     }
 };
