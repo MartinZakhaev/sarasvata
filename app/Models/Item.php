@@ -12,11 +12,15 @@ class Item extends Model
     protected $fillable = [
         'item_name',
         'stock',
-        'file_path',
     ];
 
     public function categories()
     {
         return $this->belongsToMany(Category::class);
+    }
+
+    public function itemFiles()
+    {
+        return $this->hasMany(ItemFile::class);
     }
 }

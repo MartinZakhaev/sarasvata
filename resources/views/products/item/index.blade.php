@@ -334,13 +334,34 @@
 
             // Function untuk format row details
             function format(d) {
-                var imagePath = d.file_path;
-                var imageUrl = '{{ asset('') }}' + imagePath;
+                var carouselIndicators = '';
+                var carouselItems = '';
+
+                // Loop through the item files to generate carousel indicators and items
+                d.item_files.forEach(function(itemFile, index) {
+                    var imageUrl = '{{ asset('') }}' + itemFile.file_path;
+                    carouselIndicators +=
+                        '<button type="button" data-bs-target="#carousel-indicators-thumb" data-bs-slide-to="' +
+                        index + '" class="ratio ratio-4x3' + (index === 0 ? ' active' : '') +
+                        '" style="background-image: url(' + imageUrl + ')"></button>';
+                    carouselItems += '<div class="carousel-item' + (index === 0 ? ' active' : '') + '">' +
+                        '<img class="d-block w-100" alt="" src="' + imageUrl +
+                        '" style="max-width: 100%; max-height: 300px;" />' +
+                        '</div>';
+                });
+
                 return '<div class="row-details">' +
                     '<p><strong>Item ID:</strong> ' + d.id + '</p>' +
                     '<p><strong>Category:</strong> ' + d.category_name + '</p>' +
                     '<p><strong>Stock:</strong> ' + d.stock + '</p>' +
-                    '<img src="' + imageUrl + '" alt="Item Image" class="img-fluid">' +
+                    '<div id="carousel-indicators-thumb" class="carousel slide carousel-fade" data-bs-ride="carousel">' +
+                    '<div class="carousel-indicators carousel-indicators-thumb">' +
+                    carouselIndicators +
+                    '</div>' +
+                    '<div class="carousel-inner">' +
+                    carouselItems +
+                    '</div>' +
+                    '</div>' +
                     '</div>';
             }
 
@@ -372,20 +393,31 @@
                 });
             });
 
-            var selectedFile;
+            var selectedFiles = [];
 
             var myDropzone = new Dropzone("#dropzone-custom", {
+                uploadMultiple: true,
                 autoProcessQueue: false, // Disable auto processing
                 paramName: "file", // Name of the file parameter
-                maxFilesize: 2, // Maximum file size in MB
+                maxFilesize: 10, // Maximum file size in MB
                 acceptedFiles: ".jpg, .jpeg, .png, .gif, .webp", // Allowed file types
                 addRemoveLinks: true, // Add remove button
                 dictRemoveFile: "Remove", // Text for remove button
+                maxFiles: 10,
+                parallelUploads: 10,
             });
 
             // Custom event handler saat file di tambahkan 
             myDropzone.on("addedfile", function(file) {
-                selectedFile = file;
+                selectedFiles.push(file);
+            });
+
+            // Function to remove files from the array when removed from Dropzone
+            myDropzone.on("removedfile", function(file) {
+                var index = selectedFiles.indexOf(file);
+                if (index !== -1) {
+                    selectedFiles.splice(index, 1);
+                }
             });
 
             $("#submitAddBtn").on("click", function() {
@@ -401,8 +433,8 @@
                 var itemCategory = $('#categorySelector').val();
                 var itemStock = $('#itemStock').val();
 
-                if (!selectedFile) {
-                    alert('Please upload a file.');
+                if (selectedFiles.length === 0) {
+                    toastr.warning('Please upload a file.');
                     return;
                 }
 
@@ -416,7 +448,9 @@
                     formData.append('name', itemName);
                     formData.append('category', itemCategory);
                     formData.append('stock', itemStock);
-                    formData.append('file', selectedFile);
+                    selectedFiles.forEach(function(file, index) {
+                        formData.append('files[' + index + ']', file);
+                    });
 
                     $.ajax({
                         url: '{{ route('product.item.store') }}',
@@ -427,7 +461,11 @@
                         success: function(response) {
                             myDropzone.removeAllFiles(true);
                             $('.data-table').DataTable().ajax.reload(null, false);
-                            uploadedFile = null;
+                            selectedFiles = [];
+                            var notification = response.notification;
+                            if (notification) {
+                                toastr[notification.type](notification.message);
+                            }
                         },
                         error: function(xhr) {
                             if (xhr.responseJSON && xhr.responseJSON.errors) {
@@ -469,6 +507,10 @@
                     },
                     success: function(response) {
                         $('.data-table').DataTable().ajax.reload(null, false);
+                        var notification = response.notification;
+                        if (notification) {
+                            toastr[notification.type](notification.message);
+                        }
                     }
                 });
             });
@@ -493,6 +535,10 @@
                     },
                     success: function(response) {
                         $('.data-table').DataTable().ajax.reload(null, false);
+                        var notification = response.notification;
+                        if (notification) {
+                            toastr[notification.type](notification.message);
+                        }
                     }
                 });
             });

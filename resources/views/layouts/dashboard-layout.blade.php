@@ -22,11 +22,13 @@
     <link href="{{ asset('./dist/css/tabler-vendors.min.css?1684106062') }}" rel="stylesheet" />
     @stack('stylesheets')
     <link href="https://cdn.datatables.net/1.11.4/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.css" rel="stylesheet">
     <link href="{{ asset('./dist/css/demo.min.css?1684106062') }}" rel="stylesheet" />
     <script src="https://code.jquery.com/jquery-3.5.1.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.0/jquery.validate.js"></script>
     <script src="https://cdn.datatables.net/1.11.4/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.11.4/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/js/toastr.min.js"></script>
     <style>
         @import url('https://rsms.me/inter/inter.css');
 
@@ -160,6 +162,12 @@
     <script src="{{ asset('./dist/js/tabler.min.js?1684106062') }}" defer></script>
     @stack('scripts')
     <script src="{{ asset('./dist/js/demo.min.js?1684106062') }}" defer></script>
+    <script>
+        @if (Session::has('message'))
+            // toastr.{{ Session::get('type') }}("{{ Session::get('message') }}");
+            toastr.success("{{ Session::get('message') }}")
+        @endif
+    </script>
     <script>
         // @formatter:off
         document.addEventListener("DOMContentLoaded", function() {
