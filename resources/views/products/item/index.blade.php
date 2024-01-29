@@ -113,10 +113,10 @@
                             <input type="number" class="form-control" id="itemStock" placeholder="Stock" />
                             <div id="stockInvalid" class="invalid-feedback"></div>
                         </div>
-                        <input type="hidden" id="c" name="uploadedFileName">
                         <button type="submit" class="d-none"></button>
                     </form>
                     <form class="dropzone" id="dropzone-custom" action="#" autocomplete="off" novalidate>
+                        @csrf
                         <div class="fallback">
                             <input name="file" type="file" />
                         </div>
@@ -130,7 +130,7 @@
                     <a href="#" class="btn btn-link link-secondary" data-bs-dismiss="modal">
                         Cancel
                     </a>
-                    <button type="button" id="submitAddBtn" class="btn btn-primary ms-auto" data-bs-dismiss="modafl">
+                    <button type="button" id="submitAddBtn" class="btn btn-primary ms-auto">
                         Save
                     </button>
                 </div>
@@ -438,50 +438,86 @@
                     return;
                 }
 
-                myDropzone.processQueue();
+                // myDropzone.on('sending', function(file, xhr, formData) {
+                var formData = new FormData();
+                formData.append('_method', 'POST');
+                formData.append('_token', $('meta[name="csrf-token"]').attr('content'));
+                formData.append('name', itemName);
+                formData.append('category', itemCategory);
+                formData.append('stock', itemStock);
+                selectedFiles.forEach(function(file, index) {
+                    formData.append('files[' + index + ']', file);
+                });
+                // });
+
+                // Upload each file individually
+                // selectedFiles.forEach(function(file) {
+                //     myDropzone.uploadFile(file);
+                // });
+
+                // myDropzone.processQueue();
 
                 // Menunggu proses upload file selesai
-                myDropzone.on('queuecomplete', function() {
-                    var formData = new FormData();
-                    formData.append('_method', 'POST');
-                    formData.append('_token', $('meta[name="csrf-token"]').attr('content'));
-                    formData.append('name', itemName);
-                    formData.append('category', itemCategory);
-                    formData.append('stock', itemStock);
-                    selectedFiles.forEach(function(file, index) {
-                        formData.append('files[' + index + ']', file);
-                    });
-
-                    $.ajax({
-                        url: '{{ route('product.item.store') }}',
-                        method: 'POST',
-                        data: formData,
-                        processData: false,
-                        contentType: false,
-                        success: function(response) {
-                            myDropzone.removeAllFiles(true);
-                            $('.data-table').DataTable().ajax.reload(null, false);
-                            selectedFiles = [];
-                            var notification = response.notification;
-                            if (notification) {
-                                toastr[notification.type](notification.message);
-                            }
-                        },
-                        error: function(xhr) {
-                            if (xhr.responseJSON && xhr.responseJSON.errors) {
-                                var errors = xhr.responseJSON.errors;
-                                $('#itemName').addClass('is-invalid');
-                                $('#categorySelector').addClass('is-invalid');
-                                $('#itemStock').addClass('is-invalid');
-                                $('#itemNameInvalid').html(errors.name);
-                                $('#categoryInvalid').html(errors.category);
-                                $('#stockInvalid').html(errors.stock);
-                            } else {
-                                console.log(xhr);
-                            }
+                // myDropzone.on('queuecomplete', function() {
+                $.ajax({
+                    url: '{{ route('product.item.store') }}',
+                    method: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    xhr: function() {
+                        var xhr = $.ajaxSettings.xhr();
+                        if (xhr.upload) {
+                            // Handle file upload progress
+                            xhr.upload.addEventListener('progress', function(event) {
+                                if (event.lengthComputable) {
+                                    var percentComplete = (event.loaded / event.total) *
+                                        100;
+                                    // Update the progress bar for each file
+                                    selectedFiles.forEach(function(file) {
+                                        var progressElement = file
+                                            .previewElement.querySelector(
+                                                ".dz-upload");
+                                        progressElement.style.width =
+                                            percentComplete + "%";
+                                    });
+                                }
+                            }, false);
                         }
-                    });
+                        return xhr;
+                    },
+                    success: function(response) {
+                        // Show success animations after the upload is complete
+                        selectedFiles.forEach(function(file) {
+                            // Show the success check mark for each uploaded file
+                            var successElement = file.previewElement.querySelector(
+                                ".dz-success-mark");
+                            successElement.style.opacity = "1";
+                        });
+                        myDropzone.removeAllFiles(true);
+                        $('.data-table').DataTable().ajax.reload(null, false);
+                        selectedFiles = [];
+                        var notification = response.notification;
+                        if (notification) {
+                            toastr[notification.type](notification.message);
+                        }
+                        $('#addItemModal').modal('hide');
+                    },
+                    error: function(xhr) {
+                        if (xhr.responseJSON && xhr.responseJSON.errors) {
+                            var errors = xhr.responseJSON.errors;
+                            $('#itemName').addClass('is-invalid');
+                            $('#categorySelector').addClass('is-invalid');
+                            $('#itemStock').addClass('is-invalid');
+                            $('#itemNameInvalid').html(errors.name);
+                            $('#categoryInvalid').html(errors.category);
+                            $('#stockInvalid').html(errors.stock);
+                        } else {
+                            console.log(xhr);
+                        }
+                    }
                 });
+                // });
             });
 
             // saat click tombol save
