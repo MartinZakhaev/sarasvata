@@ -18,11 +18,25 @@ class CategoryController extends Controller
             return DataTables::of($data)
                 ->addIndexColumn()
                 ->addColumn('action', function ($row) {
-                    $actionBtn = '<a href="javascript:void(0)" class="edit btn btn-success btn-sm" data-id="'
-                        . $row->id . '">Edit</a> 
-                    <a href="javascript:void(0)" class="delete btn btn-danger btn-sm"
-                     data-bs-toggle="modal" data-bs-target="#modal-danger" data-id="'
-                        . $row->id . '">Delete</a>';
+                    $actionBtn = '
+                    <button class="btn btn-outline-info btn-sm">
+                    <span class="details-control cursor-pointer"
+                    data-id="' . $row->id . '">
+                    Details
+                    </span>
+                    </button>
+                    <a href="javascript:void(0)" 
+                    class="edit btn btn-outline-success btn-sm" 
+                    data-id="' . $row->id . '">
+                    Edit
+                    </a> 
+                    <a href="javascript:void(0)" 
+                    class="delete btn btn-outline-danger btn-sm"
+                    data-bs-toggle="modal" 
+                    data-bs-target="#modal-danger" 
+                    data-id="' . $row->id . '">
+                    Delete
+                    </a>';
                     return $actionBtn;
                 })
                 ->rawColumns(['action'])
@@ -60,7 +74,12 @@ class CategoryController extends Controller
 
         $category = Category::create(['category_name' => $request->input('name')]);
 
-        return response()->json(['message' => 'Category created successfully', 'category' => $category]);
+        $notification = array(
+            'message' => 'Category created successfully',
+            'type' => 'success',
+        );
+
+        return response()->json(['notification' => $notification, 'category' => $category]);
     }
 
     /**
@@ -89,7 +108,12 @@ class CategoryController extends Controller
         $category->category_name = $request->input('name');
         $category->save();
 
-        return redirect()->route('product.category.index')->with('success', 'Category updated successfully');
+        $notification = array(
+            'message' => 'Category updated successfully',
+            'type' => 'success',
+        );
+
+        return response()->json(['notification' => $notification, 'category' => $category]);
     }
 
     /**
@@ -101,6 +125,11 @@ class CategoryController extends Controller
 
         $category->delete();
 
-        return response()->json(['message' => 'Category deleted successfully.']);
+        $notification = array(
+            'message' => 'Category deleted successfully',
+            'type' => 'success',
+        );
+
+        return response()->json(['notification' => $notification]);
     }
 }
