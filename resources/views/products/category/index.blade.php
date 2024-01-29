@@ -30,7 +30,7 @@
                                                 <tr>
                                                     <th>No</th>
                                                     <th>Category</th>
-                                                    <th width="105px">Action</th>
+                                                    <th width="160px">Action</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -78,7 +78,7 @@
                         <a href="#" class="btn btn-link link-secondary" data-bs-dismiss="modal">
                             Cancel
                         </a>
-                        <button type="submit" class="btn btn-primary ms-auto" data-bs-dismiss="modal">
+                        <button type="submit" class="btn btn-primary ms-auto">
                             Save
                         </button>
                     </div>
@@ -121,7 +121,7 @@
                         <a href="#" class="btn btn-link link-secondary" data-bs-dismiss="modal">
                             Cancel
                         </a>
-                        <button type="submit" class="btn btn-primary ms-auto" data-bs-dismiss="modal">
+                        <button type="submit" class="btn btn-primary ms-auto">
                             Save
                         </button>
                     </div>
@@ -200,6 +200,28 @@
                 ]
             });
 
+            // Event listener untuk menampilkan row details
+            $('.data-table tbody').on('click', '.details-control', function() {
+                var tr = $(this).closest('tr');
+                var row = table.row(tr);
+
+                if (row.child.isShown()) {
+                    row.child.hide();
+                    tr.removeClass('shown');
+                } else {
+                    row.child(format(row.data())).show();
+                    tr.addClass('shown');
+                }
+            });
+
+            // Function untuk format row details
+            function format(d) {
+                return '<div class="row-details">' +
+                    '<p><strong>Item ID:</strong> ' + d.id + '</p>' +
+                    '<p><strong>Category:</strong> ' + d.category_name + '</p>' +
+                    '</div>';
+            }
+
             // saat click tombol add
             $('#addCategoryBtn').click(function() {
                 $('#categoryName').val('');
@@ -240,6 +262,11 @@
                     },
                     success: function(response) {
                         $('.data-table').DataTable().ajax.reload(null, false);
+                        $('#addCategoryModal').modal('hide');
+                        var notification = response.notification;
+                        if (notification) {
+                            toastr[notification.type](notification.message);
+                        }
                     },
                     error: function(xhr) {
                         if (xhr.responseJSON && xhr.responseJSON.errors) {
@@ -272,6 +299,11 @@
                     },
                     success: function(response) {
                         $('.data-table').DataTable().ajax.reload(null, false);
+                        $('#editCategoryModal').modal('hide');
+                        var notification = response.notification;
+                        if (notification) {
+                            toastr[notification.type](notification.message);
+                        }
                     }
                 });
             });
@@ -296,6 +328,10 @@
                     },
                     success: function(response) {
                         $('.data-table').DataTable().ajax.reload(null, false);
+                        var notification = response.notification;
+                        if (notification) {
+                            toastr[notification.type](notification.message);
+                        }
                     }
                 });
             });

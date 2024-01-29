@@ -30,7 +30,6 @@ class ItemController extends Controller
                     <span class="details-control cursor-pointer"
                     data-id="' . $row->id . '">
                     Details
-                    </svg>
                     </span>
                     </button>
                     <a href="javascript:void(0)" 
